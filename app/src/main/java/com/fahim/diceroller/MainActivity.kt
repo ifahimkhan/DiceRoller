@@ -2,6 +2,7 @@ package com.fahim.diceroller
 
 import android.media.MediaPlayer
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -33,8 +34,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.fahim.diceroller.ui.theme.DiceRollerTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.IOException
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,7 +55,7 @@ class MainActivity : ComponentActivity() {
 @Preview
 @Composable
 fun DiceRollerApp() {
-    DiceWithButtonAndImage(
+    RollDiceImage(
         modifier = Modifier
             .fillMaxSize()
             .wrapContentSize(Alignment.Center)
@@ -60,7 +64,7 @@ fun DiceRollerApp() {
 }
 
 @Composable
-fun DiceWithButtonAndImage(
+fun RollDiceImage(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -116,9 +120,20 @@ fun DiceWithButtonAndImage(
         } else {
             rotation.snapTo(0f)
             scale.snapTo(1f)
-            if (mediaPlayer.isPlaying) {
-                mediaPlayer.stop()
-                mediaPlayer.prepare()
+            withContext(Dispatchers.IO) {
+                if (mediaPlayer.isPlaying) {
+                    mediaPlayer.stop()
+                    try {
+                        mediaPlayer.prepareAsync() // Now you can prepare it
+                    } catch (e: IOException) {
+                        Log.e("MediaPlayerError", "Error preparing media player", e)
+
+                    } catch (e: IllegalStateException) {
+                        Log.e("MediaPlayerError", "Error preparing media player", e)
+
+                    }
+                }
+
             }
         }
     }
