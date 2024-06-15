@@ -1,6 +1,7 @@
 package com.fahim.diceroller
 
 import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -38,7 +39,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.IOException
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,8 +88,31 @@ fun RollDiceImage(
         MediaPlayer.create(context, R.raw.dice_roll)
     }
 
+    var isPrepared by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        Log.e("TAG", "RollDiceImage: LaunchedEffect")
+        withContext(Dispatchers.IO) {
+            try {
+                mediaPlayer.setDataSource(
+                    context,
+                    Uri.parse("android.resource://" + context.packageName + "/" + R.raw.dice_roll)
+                )
+                mediaPlayer.prepareAsync()
+                mediaPlayer.setOnPreparedListener { isPrepared = true } // Update prepared state
+            } catch (e: Exception) {
+                Log.e("MediaPlayerError", "Error preparing: ${e.message}")
+            }
+        }
+    }
+
     LaunchedEffect(key1 = isRolling) {
         if (isRolling) {
+            if (isPrepared) {
+                mediaPlayer.start()
+            } else {
+                Log.w("MediaPlayer", "Attempted to start playback before preparation")
+            }
+
             coroutineScope.launch {
                 launch {
                     try {
@@ -120,25 +143,16 @@ fun RollDiceImage(
         } else {
             rotation.snapTo(0f)
             scale.snapTo(1f)
-            withContext(Dispatchers.IO) {
-                if (mediaPlayer.isPlaying) {
-                    mediaPlayer.stop()
-                    try {
-                        mediaPlayer.prepareAsync() // Now you can prepare it
-                    } catch (e: IOException) {
-                        Log.e("MediaPlayerError", "Error preparing media player", e)
-
-                    } catch (e: IllegalStateException) {
-                        Log.e("MediaPlayerError", "Error preparing media player", e)
-
-                    }
-                }
-
+            if (mediaPlayer.isPlaying) {
+                mediaPlayer.stop()
+                mediaPlayer.reset() // Reset after stopping
+                isPrepared = false // Reset prepared state
             }
         }
     }
     DisposableEffect(Unit) {
         onDispose {
+            Log.e("TAG", "RollDiceImage: ")
             mediaPlayer.release()
         }
     }
