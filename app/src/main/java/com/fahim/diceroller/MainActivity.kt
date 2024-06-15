@@ -15,8 +15,10 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.wrapContentSize
@@ -31,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -164,7 +167,7 @@ fun RollDiceImage(
                     scaleX = scale.value
                     scaleY = scale.value
                 }
-                .clickable(indication = null, // Disable the visual feedback
+                /*.clickable(indication = null, // Disable the visual feedback
                     interactionSource = remember { MutableInteractionSource() })
                 {
                     if (isRolling) return@clickable // Prevent rolling when already rolling
@@ -173,6 +176,38 @@ fun RollDiceImage(
                         delay(1000)  // Duration of the rolling animation
                         result = (1..6).random()
                         isRolling = false
+                    }
+                }*/
+                .pointerInput(Unit) {
+                    if (!isRolling) { // Check outside to avoid unnecessary gesture detection
+                        detectTapGestures(
+                            onTap = {
+                                Log.e("TAG", "RollDiceImage:onTap ")
+                                isRolling = true
+                                coroutineScope.launch {
+                                    delay(1000)
+                                    result = (1..6).random()
+                                    isRolling = false
+                                }
+                            },
+                            onDoubleTap = {
+                                isRolling = true
+                                coroutineScope.launch {
+                                    delay(1000)
+                                    result = (4..6).random()
+                                    isRolling = false
+                                }
+                            },
+                            onLongPress = {
+                                isRolling = true
+                                coroutineScope.launch {
+                                    delay(1000)
+                                    result = (1..3).random()
+                                    isRolling = false
+                                }
+                            },
+
+                        )
                     }
                 },
             painter = painterResource(imageResource),
