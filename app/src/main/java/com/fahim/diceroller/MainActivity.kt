@@ -1,5 +1,6 @@
 package com.fahim.diceroller
 
+import android.content.Context
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
@@ -95,16 +96,7 @@ fun RollDiceImage(
     LaunchedEffect(Unit) {
         Log.e("TAG", "RollDiceImage: LaunchedEffect")
         withContext(Dispatchers.IO) {
-            try {
-                mediaPlayer.setDataSource(
-                    context,
-                    Uri.parse("android.resource://" + context.packageName + "/" + R.raw.dice_roll)
-                )
-                mediaPlayer.prepareAsync()
-                mediaPlayer.setOnPreparedListener { isPrepared = true } // Update prepared state
-            } catch (e: Exception) {
-                Log.e("MediaPlayerError", "Error preparing: ${e.message}")
-            }
+            initMediaPlayer(mediaPlayer, context, isPrepared)
         }
     }
 
@@ -114,6 +106,7 @@ fun RollDiceImage(
                 mediaPlayer.start()
             } else {
                 Log.w("MediaPlayer", "Attempted to start playback before preparation")
+                initMediaPlayer(mediaPlayer, context, isPrepared)
             }
 
             coroutineScope.launch {
@@ -215,4 +208,22 @@ fun RollDiceImage(
         )
     }
 
+}
+
+private fun initMediaPlayer(
+    mediaPlayer: MediaPlayer,
+    context: Context,
+    isPrepared: Boolean
+) {
+    var isPrepared1 = isPrepared
+    try {
+        mediaPlayer.setDataSource(
+            context,
+            Uri.parse("android.resource://" + context.packageName + "/" + R.raw.dice_roll)
+        )
+        mediaPlayer.prepareAsync()
+        mediaPlayer.setOnPreparedListener { isPrepared1 = true } // Update prepared state
+    } catch (e: Exception) {
+        Log.e("MediaPlayerError", "Error preparing: ${e.message}")
+    }
 }
