@@ -1,6 +1,5 @@
 package com.fahim.diceroller
 
-import android.content.Context
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
@@ -16,10 +15,7 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.wrapContentSize
@@ -92,23 +88,23 @@ fun RollDiceImage(
         MediaPlayer.create(context, R.raw.dice_roll)
     }
 
-    var isPrepared by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         Log.e("TAG", "RollDiceImage: LaunchedEffect")
         withContext(Dispatchers.IO) {
-            initMediaPlayer(mediaPlayer, context, isPrepared)
+            try {
+                mediaPlayer.setDataSource(
+                    context,
+                    Uri.parse("android.resource://" + context.packageName + "/" + R.raw.dice_roll)
+                )
+                mediaPlayer.prepareAsync()
+            } catch (e: Exception) {
+                Log.e("MediaPlayerError", "Error preparing: ${e.message}")
+            }
         }
     }
 
     LaunchedEffect(key1 = isRolling) {
         if (isRolling) {
-            if (isPrepared) {
-                mediaPlayer.start()
-            } else {
-                Log.w("MediaPlayer", "Attempted to start playback before preparation")
-                initMediaPlayer(mediaPlayer, context, isPrepared)
-            }
-
             coroutineScope.launch {
                 launch {
                     try {
@@ -139,11 +135,6 @@ fun RollDiceImage(
         } else {
             rotation.snapTo(0f)
             scale.snapTo(1f)
-            if (mediaPlayer.isPlaying) {
-                mediaPlayer.stop()
-                mediaPlayer.reset() // Reset after stopping
-                isPrepared = false // Reset prepared state
-            }
         }
     }
     DisposableEffect(Unit) {
@@ -200,7 +191,7 @@ fun RollDiceImage(
                                 }
                             },
 
-                        )
+                            )
                     }
                 },
             painter = painterResource(imageResource),
@@ -208,22 +199,4 @@ fun RollDiceImage(
         )
     }
 
-}
-
-private fun initMediaPlayer(
-    mediaPlayer: MediaPlayer,
-    context: Context,
-    isPrepared: Boolean
-) {
-    var isPrepared1 = isPrepared
-    try {
-        mediaPlayer.setDataSource(
-            context,
-            Uri.parse("android.resource://" + context.packageName + "/" + R.raw.dice_roll)
-        )
-        mediaPlayer.prepareAsync()
-        mediaPlayer.setOnPreparedListener { isPrepared1 = true } // Update prepared state
-    } catch (e: Exception) {
-        Log.e("MediaPlayerError", "Error preparing: ${e.message}")
-    }
 }
